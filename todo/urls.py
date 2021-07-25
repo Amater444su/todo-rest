@@ -1,5 +1,5 @@
 from rest_framework import routers
-from .api import TodoViewSet
+from .views import TodoViewSet
 
 
 router = routers.DefaultRouter()
