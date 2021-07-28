@@ -2,7 +2,7 @@ from rest_framework import generics
 from .models import Todo
 from rest_framework import viewsets, permissions
 from .serializers import TodoSerializer, TodoDetailSerializer
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import BasePermission, SAFE_METHODS, DjangoModelPermissions
 
 
 class PostUserWritePermission(BasePermission):
@@ -22,14 +22,14 @@ class PostUserWritePermission(BasePermission):
         return obj.author == request.user
 
 
-class TodoViewSet(viewsets.ModelViewSet, PostUserWritePermission):
+class TodoViewSet(viewsets.ModelViewSet):
     """List View for Todos model"""
     queryset = Todo.objects.all()
-    permission_classes = [PostUserWritePermission]
+    permission_classes = [DjangoModelPermissions]
     serializer_class = TodoSerializer
 
 
-class TodoDetail(generics.RetrieveAPIView, PostUserWritePermission):
+class TodoDetail(generics.RetrieveUpdateDestroyAPIView, PostUserWritePermission):
     """Detail view for ToDos model"""
     queryset = Todo.objects.all()
     permission_classes = [PostUserWritePermission]
@@ -47,9 +47,9 @@ class TodoDetail(generics.RetrieveAPIView, PostUserWritePermission):
     Used for delete-only endpoints for a single model instance.
 #UpdateAPIView
     Used for update-only endpoints for a single model instance.
-##ListCreateAPIView
+#ListCreateAPIView
     Used for read-write endpoints to represent a collection of model instances.
-RetrieveUpdateAPIView
+#RetrieveUpdateAPIView
     Used for read or update endpoints to represent a single model instance.
 #RetrieveDestroyAPIView
     Used for read or delete endpoints to represent a single model instance.
