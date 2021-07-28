@@ -1,12 +1,10 @@
 from rest_framework import routers
-from .views import TodoViewSet, UserViewSet, GroupViewSet
+from .views import TodoViewSet, TodoDetail
 
 
 router = routers.DefaultRouter()
 router.register('todo', TodoViewSet, 'todo')
-router.register(r'users', UserViewSet)
-router.register(r'groups', GroupViewSet)
-
+# router.register('todo_edit/', TodoDetail)
 
 
 urlpatterns = router.urls

@@ -1,31 +1,58 @@
-from django.shortcuts import render
-from django.contrib.auth.models import User, Group
+from rest_framework import generics
 from .models import Todo
 from rest_framework import viewsets, permissions
-from .serializers import TodoSerializer, UserSerializer, GroupSerializer
+from .serializers import TodoSerializer, TodoDetailSerializer
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class TodoViewSet(viewsets.ModelViewSet):
+class PostUserWritePermission(BasePermission):
+    """Make user permission to create and
+    delete stuff"""
+    message = 'Editing posts is restricted to the author only.' # Сообщение которое получает Юзер при ошибке
+    # То есть если у него не достаточно прав для каких то действий.
+
+    def has_object_permission(self, request, view, obj):
+
+        if request.method in SAFE_METHODS:   # SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
+            # Check permissions for read-only request
+            return True
+        else:
+            # Check permission for write request
+            pass
+        return obj.author == request.user
+
+
+class TodoViewSet(viewsets.ModelViewSet, PostUserWritePermission):
+    """List View for Todos model"""
     queryset = Todo.objects.all()
-    permission_classes = [
-        permissions.AllowAny
-    ]
+    permission_classes = [PostUserWritePermission]
     serializer_class = TodoSerializer
 
 
-class UserViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows users to be viewed or edited.
-    """
-    queryset = User.objects.all().order_by('-date_joined')
-    serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+class TodoDetail(generics.RetrieveAPIView, PostUserWritePermission):
+    """Detail view for ToDos model"""
+    queryset = Todo.objects.all()
+    permission_classes = [PostUserWritePermission]
+    serializer_class = TodoDetailSerializer
 
 
-class GroupViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
-    permission_classes = [permissions.IsAuthenticated]
+""" Concrete View Classes
+#CreateAPIView
+    Used for create-only endpoints.
+#ListAPIView
+    Used for read-only endpoints to represent a collection of model instances.
+#RetrieveAPIView
+    Used for read-only endpoints to represent a single model instance.
+#DestroyAPIView
+    Used for delete-only endpoints for a single model instance.
+#UpdateAPIView
+    Used for update-only endpoints for a single model instance.
+##ListCreateAPIView
+    Used for read-write endpoints to represent a collection of model instances.
+RetrieveUpdateAPIView
+    Used for read or update endpoints to represent a single model instance.
+#RetrieveDestroyAPIView
+    Used for read or delete endpoints to represent a single model instance.
+#RetrieveUpdateDestroyAPIView
+    Used for read-write-delete endpoints to represent a single model instance.
+"""
