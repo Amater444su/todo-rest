@@ -30,7 +30,7 @@ class TodoViewSet(viewsets.ModelViewSet):
 
 
 class TodoDetail(generics.RetrieveUpdateDestroyAPIView, PostUserWritePermission):
-    """Detail view for ToDos model"""
+    """Read-Write-Delete Todos Detail """
     queryset = Todo.objects.all()
     permission_classes = [PostUserWritePermission]
     serializer_class = TodoDetailSerializer
