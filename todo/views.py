@@ -25,7 +25,7 @@ class PostUserWritePermission(BasePermission):
 class TodoViewSet(viewsets.ModelViewSet):
     """List View for Todos model"""
     queryset = Todo.objects.all()
-    permission_classes = [DjangoModelPermissions]
+    permission_classes = [DjangoModelPermissions]   # Permission который указан в settings.py :)
     serializer_class = TodoSerializer
 
 
@@ -37,6 +37,7 @@ class TodoDetail(generics.RetrieveUpdateDestroyAPIView, PostUserWritePermission)
 
 
 """ Concrete View Classes
+# read = detail, create = create, write = ?, update = update, delete = delete.
 #CreateAPIView
     Used for create-only endpoints.
 #ListAPIView
