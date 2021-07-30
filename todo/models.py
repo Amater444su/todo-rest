@@ -3,6 +3,11 @@ from django.db import models
 from django.core.validators import RegexValidator
 
 
+class TodoCategories(models.TextChoices):
+    HOMEWORK = 'Домашнее задание'
+    HOUSEWORK = 'Дела по дому'
+
+
 class Profile(AbstractUser):
     address = models.CharField(max_length=40, blank=True, null=True, verbose_name='address')
     phone_number = models.CharField(max_length=12, null=True, blank=True, verbose_name='Phone number', validators=[
@@ -18,6 +23,7 @@ class Todo(models.Model):
     description = models.TextField(max_length=300, blank=True, null=True)
     date = models.DateTimeField(auto_now_add=True)
     done = models.BooleanField(default=False)
+    categories = models.CharField(choices=TodoCategories.choices, max_length=40, blank=True, null=True)
 
     def __str__(self):
         return self.title
