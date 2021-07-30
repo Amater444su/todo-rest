@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Todo, Profile
+from .models import Todo, Profile, Comments
 
 
 class TodoAdmin(admin.ModelAdmin):
@@ -10,5 +10,10 @@ class TodoAdmin(admin.ModelAdmin):
     list_filter = ('done', )
 
 
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'author', 'text', 'todo')
+
+
 admin.site.register(Todo, TodoAdmin)
 admin.site.register(Profile)
+admin.site.register(Comments, CommentAdmin)

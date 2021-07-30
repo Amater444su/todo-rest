@@ -27,3 +27,11 @@ class Todo(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Comments(models.Model):
+    todo = models.ForeignKey(Todo, on_delete=models.CASCADE, related_name='todo_comment', verbose_name='Заметка')
+    author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='profile_comment',
+                               verbose_name='Пользователь')
+    created_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    text = models.TextField(verbose_name='Текст коментария')
