@@ -3,7 +3,7 @@ from .models import Todo, Profile, Comments
 
 
 class TodoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'description', 'date', 'done')
+    list_display = ('id', 'author', 'title', 'description', 'date', 'done')
     list_display_links = ('id', 'title')
     search_fields = ('id', 'title', 'description')
     list_editable = ('done', )

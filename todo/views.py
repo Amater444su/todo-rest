@@ -1,8 +1,11 @@
 import ipdb
 from rest_framework import generics
-from .models import Todo
+from todo.models import Todo, Comments
 from rest_framework import viewsets, permissions
-from .serializers import TodoSerializer, TodoDetailSerializer, TodoCreateSerializer
+from todo.serializers import (
+    TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer
+            )
+from todo.permissions import IsObjectAuthorOrReadOnlyPermission
 
 
 class TodoView(generics.ListAPIView):
@@ -21,11 +24,21 @@ class TodoCreate(generics.CreateAPIView):
         serializer.save(author=self.request.user)
 
 
-class TodoDetail(generics.RetrieveUpdateDestroyAPIView, PostUserWritePermission):
+class TodoDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Read-Write-Delete Todos Detail """
     queryset = Todo.objects.all()
-    permission_classes = [PostUserWritePermission]
+    permission_classes = [IsObjectAuthorOrReadOnlyPermission]
     serializer_class = TodoDetailSerializer
+
+
+class CommentCreateView(generics.ListCreateAPIView):
+    """Create comment for a particular todo"""
+    queryset = Comments.objects.all()
+    serializer_class = CommentSerializer
+
+    def perform_create(self, serializer, **kwargs):
+        #   perform_create(self, serializer)- Вызывается CreateModelMixin при сохранении нового экземпляра объекта.
+        serializer.save(author=self.request.user, todo_id=self.kwargs.get('todo_id'))
 
 
 """ Concrete View Classes

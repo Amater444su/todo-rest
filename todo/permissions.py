@@ -1,9 +1,8 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class PostUserWritePermission(BasePermission):
-    """Make user permission to create and
-    delete stuff"""
+class IsObjectAuthorOrReadOnlyPermission(BasePermission):
+    """Check users permission to make GET, HEAD, OPTIONS requests"""
     message = 'Editing posts is restricted to the author only.'   # Сообщение которое получает Юзер при ошибке
     # То есть если у него не достаточно прав для каких то действий.
 
@@ -12,7 +11,6 @@ class PostUserWritePermission(BasePermission):
         if request.method in SAFE_METHODS:   # SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
             # Check permissions for read-only request
             return True
-        else:
-            # Check permission for write request
-            pass
+        # else:
+        # Check permission for write request
         return obj.author == request.user
