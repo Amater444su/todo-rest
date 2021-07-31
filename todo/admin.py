@@ -12,6 +12,7 @@ class TodoAdmin(admin.ModelAdmin):
 
 class CommentAdmin(admin.ModelAdmin):
     list_display = ('id', 'author', 'text', 'todo')
+    list_display_links = ('author', 'text')
 
 
 admin.site.register(Todo, TodoAdmin)

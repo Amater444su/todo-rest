@@ -1,3 +1,4 @@
+import ipdb
 from rest_framework import serializers
 from .models import Todo, Profile, Comments
 
@@ -6,21 +7,21 @@ from .models import Todo, Profile, Comments
 
 class CommentSerializer(serializers.ModelSerializer):
 
+
     class Meta:
         model = Comments
         fields = ['text']
 
 
 class TodoSerializer(serializers.ModelSerializer):
-    comment = CommentSerializer(read_only=True, many=True)
+    todo_comment = CommentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Todo
-        fields = ['id', 'title', 'description', 'categories', 'author', 'comment']
+        fields = ['id', 'title', 'description', 'categories', 'author', 'todo_comment']
 
 
 class TodoCreateSerializer(serializers.ModelSerializer):
-    # todos = serializers.PrimaryKeyRelatedField(many=False, queryset=Todo.objects.all())
 
     class Meta:
         model = Todo
@@ -28,11 +29,11 @@ class TodoCreateSerializer(serializers.ModelSerializer):
 
 
 class TodoDetailSerializer(serializers.ModelSerializer):
-    comment = CommentSerializer(write_only=True)
+
 
     class Meta:
         model = Todo
-        fields = ['title', 'description', 'categories', 'comment']
+        fields = ['title', 'description', 'categories']
 
 
 
