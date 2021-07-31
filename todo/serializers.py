@@ -7,10 +7,9 @@ from .models import Todo, Profile, Comments
 
 class CommentSerializer(serializers.ModelSerializer):
 
-
     class Meta:
         model = Comments
-        fields = ['text']
+        fields = ['id', 'text']
 
 
 class TodoSerializer(serializers.ModelSerializer):
@@ -29,7 +28,6 @@ class TodoCreateSerializer(serializers.ModelSerializer):
 
 
 class TodoDetailSerializer(serializers.ModelSerializer):
-
 
     class Meta:
         model = Todo

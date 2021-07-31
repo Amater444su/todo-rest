@@ -1,5 +1,5 @@
 from rest_framework import routers
-from .views import TodoViewSet, TodoDetail, TodoCreate
+from .views import TodoView, TodoDetail, TodoCreate
 from django.urls import path, include
 
 
@@ -9,7 +9,7 @@ router = routers.DefaultRouter()
 
 
 urlpatterns = [
-    path('', TodoViewSet.as_view(), name='todo'),
+    path('', TodoView.as_view(), name='todo'),
     path('todo-edit/<int:pk>', TodoDetail.as_view(), name='todo-edit'),
     path('todo-create/', TodoCreate.as_view(), name='todo-create')
 
