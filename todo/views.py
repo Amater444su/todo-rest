@@ -1,11 +1,19 @@
 import ipdb
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.views import APIView
 from todo.models import Todo, Comments
 from rest_framework import viewsets, permissions
 from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer
             )
 from todo.permissions import IsObjectAuthorOrReadOnlyPermission
+
+
+# class Logout(APIView):
+#
+#     def get(self, request, format=None):
+#         request.user.auth_token.delete()
+#         return Response(status=status.HTTP_200_OK)
 
 
 class TodoView(generics.ListAPIView):
@@ -27,7 +35,7 @@ class TodoCreate(generics.CreateAPIView):
 class TodoDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Read-Write-Delete Todos Detail """
     queryset = Todo.objects.all()
-    permission_classes = [IsObjectAuthorOrReadOnlyPermission]
+    permission_class = [IsObjectAuthorOrReadOnlyPermission]
     serializer_class = TodoDetailSerializer
 
 
