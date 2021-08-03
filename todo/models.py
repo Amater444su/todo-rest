@@ -35,3 +35,26 @@ class Comments(models.Model):
                                verbose_name='Пользователь')
     created_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     text = models.TextField(verbose_name='Текст коментария')
+
+
+class GroupTask(models.Model):
+    STATUS_CHOICES = (
+        ('not_done', 'Not done'),
+        ('in_process', 'In process'),
+        ('done', 'Done'),
+        ('out_of_date', 'Out of date')
+    )
+    creator = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='creator')
+    worker = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='worker', null=True, blank=True)
+    task_title = models.CharField(max_length=100)
+    task_description = models.TextField()
+    task_start_time = models.DateTimeField(auto_now_add=True)
+    deadline = models.DateTimeField()
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES)
+
+
+class Groups(models.Model):
+    admin = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='admin')
+    group_tasks = models.ManyToManyField(GroupTask, related_name='group_tasks', null=True, blank=True)
+    users = models.ManyToManyField(Profile, related_name='users')
+    task_amount = models.PositiveIntegerField(default=0)

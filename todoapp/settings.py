@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'todo.apps.TodoConfig',
     'rest_framework',
     'djoser',
+    'dj_rest_auth',
 
 ]
 
@@ -131,6 +132,8 @@ STATIC_URL = '/static/'
 #     'AUTH_HEADER_TYPES': ('Bearer', ),
 # }
 
+REST_USE_JWT = True
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly'
@@ -138,11 +141,14 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # 'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
     )
     # 'DEFAULT_AUTHENTICATION_CLASSES': [
     #     'rest_framework.authentication.TokenAuthentication',
     # ]
 }
+
+
 # Permissions:
 # AllowAny
 # IsAuthenticated
