@@ -1,4 +1,6 @@
 import ipdb
+from django.http import HttpResponse
+from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from todo.models import (
@@ -73,8 +75,12 @@ class GroupsDetailView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         # ipdb.set_trace()
-        username_param = self.request.query_params['username']
         queryset = Groups.objects.all()
+        try:
+            username_param = self.request.query_params['username']
+        except MultiValueDictKeyError:
+            username_param = None
+
         if username_param:
             user = Profile.objects.filter(username=username_param).first()
             group = queryset.filter(id=self.kwargs['pk']).first()
@@ -82,6 +88,17 @@ class GroupsDetailView(generics.RetrieveUpdateAPIView):
         else:
             queryset = Groups.objects.all()
         return queryset
+
+
+class GroupsDeleteUsersView(APIView):
+    """Remove user from the group"""
+    def get(self, request, user_id):
+        admin = self.request.user
+        group = Groups.objects.filter(admin=admin).first()
+        user = Profile.objects.filter(id=user_id).first()
+        group.users.remove(user)
+        group.save()
+        return HttpResponse('')
 
 
 """ Concrete View Classes

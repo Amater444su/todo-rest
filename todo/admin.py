@@ -17,12 +17,10 @@ class CommentAdmin(admin.ModelAdmin):
 
 class GroupTaskAdmin(admin.TabularInline):
     model = Groups.group_tasks.through
-    # list_display = ('creator', 'worker', 'task_title', 'deadline', 'status')
 
 
 class GroupsAdmin(admin.ModelAdmin):
     inlines = (GroupTaskAdmin,)
-    # list_display = ('creator', 'worker', 'task_title', 'deadline', 'status')
 
 
 class GroupsTaskAdmin(admin.ModelAdmin):
@@ -30,8 +28,12 @@ class GroupsTaskAdmin(admin.ModelAdmin):
     list_display_links = ('worker', 'task_title')
 
 
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('id', 'username')
+
+
 admin.site.register(Todo, TodoAdmin)
-admin.site.register(Profile)
+admin.site.register(Profile, ProfileAdmin)
 admin.site.register(Comments, CommentAdmin)
 admin.site.register(Groups, GroupsAdmin)
 admin.site.register(GroupTask, GroupsTaskAdmin)

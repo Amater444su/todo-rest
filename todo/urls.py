@@ -13,7 +13,9 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view()),
     path('group-create/', GroupsCreateView.as_view(), name='group_create'),
     path('group/', GroupsView.as_view(), name='group'),
-    path('group/<int:pk>/', GroupsDetailView.as_view(), name='group_detail')
+    path('group/<int:pk>/', GroupsDetailView.as_view(), name='group_detail'),
+    path('group-remove/<int:user_id>/', GroupsDeleteUsersView.as_view(), name='group_detail'),
+
 
 ]
 
