@@ -24,7 +24,7 @@ class GroupsAdmin(admin.ModelAdmin):
 
 
 class GroupsTaskAdmin(admin.ModelAdmin):
-    list_display = ('creator', 'worker', 'task_title', 'deadline', 'status')
+    list_display = ('id', 'creator', 'worker', 'task_title', 'deadline', 'status')
     list_display_links = ('worker', 'task_title')
 
 

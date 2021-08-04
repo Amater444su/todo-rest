@@ -81,11 +81,11 @@ class GroupListDetailView(generics.ListAPIView):
 
 
 class GroupsDetailView(generics.RetrieveUpdateAPIView):
-# class GroupsDetailView(generics.ListAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
 
     def get_queryset(self):
+        """Add members to the group"""
         # ipdb.set_trace()
         queryset = Groups.objects.all()
         try:
@@ -114,11 +114,16 @@ class GroupsDeleteUsersView(APIView):
 
 
 class GroupTaskView(generics.CreateAPIView):
+    """Create task for current group"""
     queryset = GroupTask
     serializer_class = GroupTaskSerializer
 
     def perform_create(self, serializer, **kwargs):
+        """Create task and relate this task to group"""
         serializer.save(creator=self.request.user)
+        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        task = GroupTask.objects.filter(creator=self.request.user).last()
+        group.group_tasks.add(task)
 
 
 """ Concrete View Classes

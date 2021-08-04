@@ -15,8 +15,8 @@ urlpatterns = [
     path('group/', GroupsView.as_view(), name='group'),
     path('group/<int:pk>/', GroupsDetailView.as_view(), name='group_detail'),
     path('users-group/', GroupListDetailView.as_view(), name='users_group'),
-    # path('group/detail/', GroupsDetailView.as_view(), name='group_detail'),
     path('group-remove/<int:user_id>/', GroupsDeleteUsersView.as_view(), name='group_detail'),
+    path('group/<int:group_id>/task/', GroupTaskView.as_view(), name='grouptast_create')
 
 
 ]

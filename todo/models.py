@@ -49,8 +49,8 @@ class GroupTask(models.Model):
     task_title = models.CharField(max_length=100)
     task_description = models.TextField()
     task_start_time = models.DateTimeField(auto_now_add=True)
-    deadline = models.DateTimeField()
-    status = models.CharField(max_length=100, choices=STATUS_CHOICES)
+    deadline = models.DateTimeField(blank=True, null=True)
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES, default='Not done')
 
 
 class Groups(models.Model):
