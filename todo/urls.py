@@ -1,5 +1,5 @@
 from rest_framework import routers
-from .views import TodoView, TodoDetailView, TodoCreate, CommentCreateView
+from .views import *
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -11,6 +11,9 @@ urlpatterns = [
     path('todo-create/', TodoCreate.as_view(), name='todo-create'),
     path('api/token/', TokenObtainPairView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view()),
+    path('group-create/', GroupsCreateView.as_view(), name='group_create'),
+    path('group/', GroupsView.as_view(), name='group'),
+    path('group/<int:pk>/', GroupsDetailView.as_view(), name='group_detail')
 
 ]
 

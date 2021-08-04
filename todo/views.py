@@ -1,10 +1,13 @@
 import ipdb
 from rest_framework import generics, status
 from rest_framework.views import APIView
-from todo.models import Todo, Comments
+from todo.models import (
+    Todo, Comments, Groups, GroupTask, Profile
+        )
 from rest_framework import viewsets, permissions
 from todo.serializers import (
-    TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer
+    TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
+    GroupsSerializer, GroupTaskSerializer
             )
 from todo.permissions import IsObjectAuthorOrReadOnlyPermission
 
@@ -47,6 +50,38 @@ class CommentCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer, **kwargs):
         #   perform_create(self, serializer)- Вызывается CreateModelMixin при сохранении нового экземпляра объекта.
         serializer.save(author=self.request.user, todo_id=self.kwargs.get('todo_id'))
+
+
+class GroupsCreateView(generics.CreateAPIView):
+    """Create group and declare admin"""
+    queryset = Groups.objects.all()
+    serializer_class = GroupsSerializer
+
+    def perform_create(self, serializer, **kwargs):
+        serializer.save(admin=self.request.user)
+
+
+class GroupsView(generics.ListAPIView):
+    """List of all groups"""
+    queryset = Groups.objects.all()
+    serializer_class = GroupsSerializer
+
+
+class GroupsDetailView(generics.RetrieveUpdateAPIView):
+    """Detail group for admin and members"""
+    serializer_class = GroupsSerializer
+
+    def get_queryset(self):
+        # ipdb.set_trace()
+        username_param = self.request.query_params['username']
+        queryset = Groups.objects.all()
+        if username_param:
+            user = Profile.objects.filter(username=username_param).first()
+            group = queryset.filter(id=self.kwargs['pk']).first()
+            group.users.add(user)
+        else:
+            queryset = Groups.objects.all()
+        return queryset
 
 
 """ Concrete View Classes

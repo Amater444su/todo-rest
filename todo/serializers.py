@@ -1,6 +1,6 @@
 import ipdb
 from rest_framework import serializers
-from .models import Todo, Profile, Comments
+from .models import Todo, Comments, GroupTask, Groups
 
 # Сериалайзер что бы представлять модель в JSON формате, и для валидации данных.
 
@@ -34,4 +34,22 @@ class TodoDetailSerializer(serializers.ModelSerializer):
         fields = ['title', 'description', 'categories']
 
 
+class GroupTaskSerializer(serializers.ModelSerializer):
+    creator = serializers.SlugRelatedField(slug_field='username', read_only=True)
+    worker = serializers.SlugRelatedField(slug_field='username', read_only=True)
 
+    class Meta:
+        model = GroupTask
+        fields = ['task_title', 'task_description', 'creator', 'worker']
+
+
+class GroupsSerializer(serializers.ModelSerializer):
+    admin = serializers.SlugRelatedField(slug_field='username', read_only=True)
+    group_tasks = GroupTaskSerializer(read_only=True, many=True)
+    users = serializers.SlugRelatedField(slug_field='username', read_only=True, many=True)
+
+    class Meta:
+        model = Groups
+
+        fields = ['admin', 'group_tasks', 'users', 'task_amount']
+        read_only_fields = ('task_amount', )
