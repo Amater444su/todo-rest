@@ -51,5 +51,5 @@ class GroupsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Groups
 
-        fields = ['admin', 'group_tasks', 'users', 'task_amount']
+        fields = ['name', 'admin', 'group_tasks', 'users', 'task_amount']
         read_only_fields = ('task_amount', )

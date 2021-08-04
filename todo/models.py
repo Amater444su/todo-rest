@@ -54,7 +54,8 @@ class GroupTask(models.Model):
 
 
 class Groups(models.Model):
+    name = models.CharField(max_length=50, default='My group')
     admin = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='admin')
     group_tasks = models.ManyToManyField(GroupTask, related_name='group_tasks', null=True, blank=True)
-    users = models.ManyToManyField(Profile, related_name='users')
+    users = models.ManyToManyField(Profile, related_name='users', null=True, blank=True)
     task_amount = models.PositiveIntegerField(default=0)

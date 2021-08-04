@@ -1,5 +1,6 @@
 import ipdb
 from django.http import HttpResponse
+from django.db.models import Q
 from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -69,7 +70,18 @@ class GroupsView(generics.ListAPIView):
     serializer_class = GroupsSerializer
 
 
+class GroupListDetailView(generics.ListAPIView):
+    """List of all groups available for user"""
+    serializer_class = GroupsSerializer
+
+    def get_queryset(self):
+        queryset = Groups.objects.filter(admin=self.request.user) or Groups.objects.filter(users=self.request.user)
+        # queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user))
+        return queryset
+
+
 class GroupsDetailView(generics.RetrieveUpdateAPIView):
+# class GroupsDetailView(generics.ListAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
 
@@ -99,6 +111,14 @@ class GroupsDeleteUsersView(APIView):
         group.users.remove(user)
         group.save()
         return HttpResponse('')
+
+
+class GroupTaskView(generics.CreateAPIView):
+    queryset = GroupTask
+    serializer_class = GroupTaskSerializer
+
+    def perform_create(self, serializer, **kwargs):
+        serializer.save(creator=self.request.user)
 
 
 """ Concrete View Classes
