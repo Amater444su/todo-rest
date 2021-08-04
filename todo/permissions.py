@@ -1,8 +1,9 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
+from todo.models import Profile
 
 
 class IsObjectAuthorOrReadOnlyPermission(BasePermission):
-    """Check users permission to make GET, HEAD, OPTIONS requests"""
+    """Check users permission to make edit or Safe methods"""
     message = 'Editing posts is restricted to the author only.'   # Сообщение которое получает Юзер при ошибке
     # То есть если у него не достаточно прав для каких то действий.
 
@@ -14,3 +15,13 @@ class IsObjectAuthorOrReadOnlyPermission(BasePermission):
         # else:
         # Check permission for write request
         return obj.author == request.user
+
+
+class UserInGroupOr403(BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+
+        if request.user in obj.users.all():
+            return True
+
+        return False

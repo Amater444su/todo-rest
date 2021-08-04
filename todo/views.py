@@ -1,5 +1,6 @@
 import ipdb
 from django.http import HttpResponse
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import generics, status
@@ -12,7 +13,7 @@ from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
             )
-from todo.permissions import IsObjectAuthorOrReadOnlyPermission
+from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOr403
 
 
 # class Logout(APIView):
@@ -73,6 +74,7 @@ class GroupsView(generics.ListAPIView):
 class GroupListDetailView(generics.ListAPIView):
     """List of all groups available for user"""
     serializer_class = GroupsSerializer
+    permission_classes = [UserInGroupOr403]
 
     def get_queryset(self):
         queryset = Groups.objects.filter(admin=self.request.user) or Groups.objects.filter(users=self.request.user)
@@ -83,6 +85,7 @@ class GroupListDetailView(generics.ListAPIView):
 class GroupsDetailView(generics.RetrieveUpdateAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
+    permission_classes = [UserInGroupOr403]
 
     def get_queryset(self):
         """Add members to the group"""
@@ -116,15 +119,21 @@ class GroupsDeleteUsersView(APIView):
 class GroupTaskView(generics.CreateAPIView):
     """Create task for current group"""
     queryset = GroupTask
+    permission_classes = [UserInGroupOr403]
     serializer_class = GroupTaskSerializer
 
     def perform_create(self, serializer, **kwargs):
         """Create task and relate this task to group"""
+        # ipdb.set_trace()
+        user = self.request.user
         serializer.save(creator=self.request.user)
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
         task = GroupTask.objects.filter(creator=self.request.user).last()
-        group.group_tasks.add(task)
-
+        if user in group.users.all():
+            group.group_tasks.add(task)
+        else:
+            task.delete()
+            raise PermissionDenied
 
 """ Concrete View Classes
 # read = detail, create = create, write = (update/create), update = update, delete = delete.
