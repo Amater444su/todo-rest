@@ -1,4 +1,5 @@
 import ipdb
+import datetime
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -154,19 +155,22 @@ class GroupTaskListView(generics.ListAPIView):
 
 class GroupTaskSetWorkerView(generics.RetrieveAPIView):
     """Make user writer of the task"""
-    queryset = GroupTask
     serializer_class = GroupTaskSerializer
+    queryset = GroupTask.objects.all()
 
-    def get_queryset(self):
-        # ipdb.set_trace()
+    def get_object(self):
         user = self.request.user
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
         if user not in group.users.all():
             raise PermissionDenied
         task = group.group_tasks.filter(id=self.kwargs['pk']).first()
+        time_now = datetime.datetime.now()
+        time_end = time_now + datetime.timedelta(days=3)
         task.worker = user
+        task.status = 'In process'
+        task.deadline = time_end
         task.save()
-
+        return task
 
 
 
