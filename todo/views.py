@@ -107,19 +107,21 @@ class GroupsDetailView(generics.RetrieveUpdateAPIView):
 
 class GroupsDeleteUsersView(APIView):
     """Remove user from the group"""
-    def get(self, request, user_id):
+    def get(self, request, user_id, group_id):
         admin = self.request.user
-        group = Groups.objects.filter(admin=admin).first()
+        group = Groups.objects.filter(id=group_id).first()
         user = Profile.objects.filter(id=user_id).first()
-        group.users.remove(user)
-        group.save()
-        return HttpResponse('')
+        if admin == group.admin:
+            group.users.remove(user)
+            group.save()
+            return HttpResponse('')
+        else:
+            raise PermissionDenied
 
 
 class GroupTaskView(generics.CreateAPIView):
     """Create task for current group"""
     queryset = GroupTask
-    permission_classes = [UserInGroupOr403]
     serializer_class = GroupTaskSerializer
 
     def perform_create(self, serializer, **kwargs):
@@ -134,6 +136,7 @@ class GroupTaskView(generics.CreateAPIView):
         else:
             task.delete()
             raise PermissionDenied
+
 
 """ Concrete View Classes
 # read = detail, create = create, write = (update/create), update = update, delete = delete.

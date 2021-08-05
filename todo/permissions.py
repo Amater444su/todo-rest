@@ -18,10 +18,10 @@ class IsObjectAuthorOrReadOnlyPermission(BasePermission):
 
 
 class UserInGroupOr403(BasePermission):
-
+    """Check users permission for write and read in groups"""
     def has_object_permission(self, request, view, obj):
 
-        if request.user in obj.users.all():
+        if request.user in obj.users.all() or request.user == obj.admin:
             return True
 
         return False
