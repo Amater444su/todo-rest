@@ -119,7 +119,7 @@ class GroupsDeleteUsersView(APIView):
             raise PermissionDenied
 
 
-class GroupTaskView(generics.CreateAPIView):
+class GroupTaskCreateView(generics.CreateAPIView):
     """Create task for current group"""
     queryset = GroupTask
     serializer_class = GroupTaskSerializer
@@ -136,6 +136,47 @@ class GroupTaskView(generics.CreateAPIView):
         else:
             task.delete()
             raise PermissionDenied
+
+
+class GroupTaskListView(generics.ListAPIView):
+    """List display for all tasks in current group"""
+    # permission_classes = [UserInGroupOr403]
+    serializer_class = GroupTaskSerializer
+
+    def get_queryset(self):
+        # ipdb.set_trace()
+        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        queryset = group.group_tasks.all().order_by('-worker')
+        if self.request.user not in group.users.all():
+            raise PermissionDenied
+        return queryset
+
+
+class GroupTaskSetWorkerView(generics.RetrieveAPIView):
+    """Make user writer of the task"""
+    queryset = GroupTask
+    serializer_class = GroupTaskSerializer
+
+    def get_queryset(self):
+        # ipdb.set_trace()
+        user = self.request.user
+        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        if user not in group.users.all():
+            raise PermissionDenied
+        task = group.group_tasks.filter(id=self.kwargs['pk']).first()
+        task.worker = user
+        task.save()
+
+
+
+
+
+
+
+
+
+
+
 
 
 """ Concrete View Classes

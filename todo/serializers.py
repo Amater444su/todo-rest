@@ -40,7 +40,7 @@ class GroupTaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupTask
-        fields = ['task_title', 'task_description', 'creator', 'worker', 'status']
+        fields = ['id', 'task_title', 'task_description', 'creator', 'worker', 'status']
         read_only_fields = ('status',)
 
 

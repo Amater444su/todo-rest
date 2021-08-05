@@ -1,5 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
-from todo.models import Profile
+from todo.models import Profile, Groups
 
 
 class IsObjectAuthorOrReadOnlyPermission(BasePermission):
@@ -25,3 +25,9 @@ class UserInGroupOr403(BasePermission):
             return True
 
         return False
+        # group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        # user = request.user
+        # if user in group.users.all() or user == group.admin:
+        #     return True
+        #
+        # return False
