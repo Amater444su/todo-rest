@@ -3,5 +3,6 @@ from todo.models import (
 )
 
 
-def get_permission_to_write_read(request):
-    pass
+def UserInGroupOr403(user, group):
+    if user not in group.users.all():
+        raise PermissionDenied

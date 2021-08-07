@@ -41,7 +41,7 @@ class GroupTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupTask
         fields = ['id', 'task_title', 'task_description', 'creator', 'worker', 'status', 'deadline']
-        read_only_fields = ('status',)
+        read_only_fields = ('status', 'deadline', )
 
 
 class GroupsSerializer(serializers.ModelSerializer):

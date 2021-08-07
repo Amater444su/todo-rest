@@ -3,6 +3,7 @@ import datetime
 import pytz
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
+from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import generics, status
@@ -18,11 +19,13 @@ from todo.serializers import (
 from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOr403
 
 
-# class Logout(APIView):
-#
-#     def get(self, request, format=None):
-#         request.user.auth_token.delete()
-#         return Response(status=status.HTTP_200_OK)
+class PermissionMixin:
+
+    def get_permissions(self):
+        user = self.request.user
+        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        if user not in group.users.all() or user != group.admin:
+            raise PermissionDenied
 
 
 class TodoView(generics.ListAPIView):
@@ -133,7 +136,7 @@ class GroupTaskCreateView(generics.CreateAPIView):
         serializer.save(creator=self.request.user)
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
         task = GroupTask.objects.filter(creator=self.request.user).last()
-        if user in group.users.all():
+        if user in group.users.all() and user != group.admin:
             group.group_tasks.add(task)
         else:
             task.delete()
@@ -142,53 +145,53 @@ class GroupTaskCreateView(generics.CreateAPIView):
 
 class GroupTaskListView(generics.ListAPIView):
     """List display for all tasks in current group"""
-    # permission_classes = [UserInGroupOr403]
+    permission_classes = [UserInGroupOr403]
     serializer_class = GroupTaskSerializer
 
     def get_queryset(self):
         # ipdb.set_trace()
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
         queryset = group.group_tasks.all().order_by('-worker')
-        if self.request.user not in group.users.all():
+        if self.request.user not in group.users.all() and self.request.user != group.admin:
             raise PermissionDenied
         return queryset
 
 
 class GroupTaskSetWorkerView(generics.RetrieveAPIView):
-    """Make user writer of the task"""
+    """Makes user the worker of the task"""
     serializer_class = GroupTaskSerializer
     queryset = GroupTask.objects.all()
 
     def get_object(self):
         user = self.request.user
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        if user not in group.users.all():
-            raise PermissionDenied
         task = group.group_tasks.filter(id=self.kwargs['pk']).first()
+        if user not in group.users.all() and user != group.admin:
+            raise PermissionDenied
+        elif user == task.worker:
+            return task
         time_now = datetime.datetime.now()
         time_end = time_now + datetime.timedelta(days=3)
-        task.worker = user
-        task.status = 'In process'
-        task.deadline = time_end
+        task.worker, task.status, task.deadline = user, 'In process', time_end
         task.save()
         return task
 
 
 class GroupTaskEndView(generics.RetrieveAPIView):
-    """Make user to end the task"""
-    queryset = GroupTask
+    """User's ability to complete a task"""
+    queryset = Groups
     serializer_class = GroupTaskSerializer
 
     def get_object(self):
         user = self.request.user
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
         task = group.group_tasks.filter(id=self.kwargs['pk']).first()
-        if user not in group.users.all():
+        if user not in group.users.all() and user != group.admin:
             raise PermissionDenied
         time_now = datetime.datetime.now()
-        start_time = time_now.replace(tzinfo=pytz.utc)
-        end_time = task.deadline.replace(tzinfo=pytz.utc)
-        if start_time <= end_time:
+        start_task_time = time_now.replace(tzinfo=pytz.utc)
+        end_task_time = task.deadline.replace(tzinfo=pytz.utc)
+        if start_task_time <= end_task_time:
             task.status = 'Done'
         else:
             task.status = 'Out of date'
@@ -196,6 +199,16 @@ class GroupTaskEndView(generics.RetrieveAPIView):
         return task
 
 
+def send_mail_to_worker(request):
+
+    send_mail(
+        'Task remain',
+        '1 day left before closing your task' + task.task_title,
+        'l792899@gmail.com',
+        [str(user.email)],
+        fail_silently=True
+    )
+    return 'qwe'
 
 
 

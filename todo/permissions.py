@@ -25,9 +25,3 @@ class UserInGroupOr403(BasePermission):
             return True
 
         return False
-        # group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        # user = request.user
-        # if user in group.users.all() or user == group.admin:
-        #     return True
-        #
-        # return False
