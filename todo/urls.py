@@ -19,6 +19,7 @@ urlpatterns = [
     path('group/<int:group_id>/task/', GroupTaskCreateView.as_view(), name='grouptast_create'),
     path('group/<int:group_id>/tasks/', GroupTaskListView.as_view(), name='tasks_list'),
     path('group/<int:group_id>/tasks/<int:pk>/', GroupTaskSetWorkerView.as_view(), name='tasks_list'),
+    path('group/<int:group_id>/tasks/<int:pk>/end/', GroupTaskEndView.as_view(), name='task_end'),
 
 
 

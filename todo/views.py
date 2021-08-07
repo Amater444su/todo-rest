@@ -1,5 +1,6 @@
 import ipdb
 import datetime
+import pytz
 from django.http import HttpResponse
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -173,11 +174,26 @@ class GroupTaskSetWorkerView(generics.RetrieveAPIView):
         return task
 
 
+class GroupTaskEndView(generics.RetrieveAPIView):
+    """Make user to end the task"""
+    queryset = GroupTask
+    serializer_class = GroupTaskSerializer
 
-
-
-
-
+    def get_object(self):
+        user = self.request.user
+        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        task = group.group_tasks.filter(id=self.kwargs['pk']).first()
+        if user not in group.users.all():
+            raise PermissionDenied
+        time_now = datetime.datetime.now()
+        start_time = time_now.replace(tzinfo=pytz.utc)
+        end_time = task.deadline.replace(tzinfo=pytz.utc)
+        if start_time <= end_time:
+            task.status = 'Done'
+        else:
+            task.status = 'Out of date'
+        task.save()
+        return task
 
 
 
