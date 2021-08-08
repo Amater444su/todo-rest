@@ -18,16 +18,7 @@ from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
             )
-from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOr403, IsGroupAdmin
-
-
-class PermissionMixin:
-
-    def get_permissions(self):
-        user = self.request.user
-        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        if user not in group.users.all() or user != group.admin:
-            raise PermissionDenied
+from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroup, IsGroupAdmin
 
 
 class TodoView(generics.ListAPIView):
@@ -81,7 +72,7 @@ class GroupsView(generics.ListAPIView):
 class GroupListDetailView(generics.ListAPIView):
     """List of all groups available for user"""
     serializer_class = GroupsSerializer
-    permission_classes = [UserInGroupOr403]
+    # permission_classes = [UserInGroup]
 
     def get_queryset(self):
         try:
@@ -95,11 +86,11 @@ class GroupListDetailView(generics.ListAPIView):
 class GroupsDetailView(generics.RetrieveAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
-    permission_classes = [UserInGroupOr403]
+    permission_classes = [UserInGroup]
     queryset = Groups.objects.all()
 
 
-class AddUsertoGoupView(APIView):
+class AddUserToGroupView(APIView):
     """Add members to the group"""
     def get(self, request, pk):
         try:
@@ -128,48 +119,41 @@ class GroupsDeleteUsersView(APIView):
             group.save()
             return Response(f'User {user.username} was removed')
         return Response(f'if ne otrabotal')
-        # else:
-        #     raise PermissionDenied
 
 
 class GroupTaskCreateView(generics.CreateAPIView):
     """Create task for current group"""
     queryset = GroupTask
     serializer_class = GroupTaskSerializer
+    permission_classes = [UserInGroup]
 
     def perform_create(self, serializer, **kwargs):
         """Create task and relate this task to group"""
-        # ipdb.set_trace()
         user = self.request.user
-        serializer.save(creator=self.request.user)
+        serializer.save(creator=user)
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
         task = GroupTask.objects.filter(creator=self.request.user).last()
-        if user in group.users.all() and user != group.admin:
-            group.group_tasks.add(task)
-        else:
-            task.delete()
-            raise PermissionDenied
+        group.group_tasks.add(task)
+        return Response("Task successfully added")
 
 
 class GroupTaskListView(generics.ListAPIView):
-    """List display for all tasks in current group"""
-    permission_classes = [UserInGroupOr403]
+    """display a List of all tasks in current group"""
+    permission_classes = [UserInGroup]
     serializer_class = GroupTaskSerializer
 
     def get_queryset(self):
-        # ipdb.set_trace()
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
         queryset = group.group_tasks.all().order_by('-worker')
-        if self.request.user not in group.users.all() and self.request.user != group.admin:
-            raise PermissionDenied
         return queryset
 
 
+# TODO: change naming;
 class GroupTaskSetWorkerView(generics.RetrieveAPIView):
     """Makes user the worker of the task"""
     serializer_class = GroupTaskSerializer
     queryset = GroupTask.objects.all()
-
+    # TODO: remove the logic of asign worker to separate method retrieve
     def get_object(self):
         user = self.request.user
         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
@@ -179,7 +163,9 @@ class GroupTaskSetWorkerView(generics.RetrieveAPIView):
         elif user == task.worker:
             return task
         time_now = datetime.datetime.now()
+        # TODO: get deadline from the request
         time_end = time_now + datetime.timedelta(days=3)
+        # TODO: change in process into variable
         task.worker, task.status, task.deadline = user, 'In process', time_end
         task.save()
         return task
@@ -197,6 +183,7 @@ class GroupTaskEndView(generics.RetrieveAPIView):
         if user not in group.users.all() and user != group.admin:
             raise PermissionDenied
         time_now = datetime.datetime.now()
+        # TODO: change the replace find another way to compare
         start_task_time = time_now.replace(tzinfo=pytz.utc)
         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
         if start_task_time <= end_task_time:
@@ -217,7 +204,6 @@ def send_mail_to_worker(request):
         fail_silently=True
     )
     return 'qwe'
-
 
 
 """ Concrete View Classes

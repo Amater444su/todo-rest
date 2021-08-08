@@ -43,6 +43,9 @@ class GroupTaskSerializer(serializers.ModelSerializer):
         fields = ['id', 'task_title', 'task_description', 'creator', 'worker', 'status', 'deadline']
         read_only_fields = ('status', 'deadline', )
 
+    # def create(self, validated_data):
+    #     pass
+
 
 class GroupsSerializer(serializers.ModelSerializer):
     admin = serializers.SlugRelatedField(slug_field='username', read_only=True)
