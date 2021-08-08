@@ -3,6 +3,13 @@ from django.db import models
 from django.core.validators import RegexValidator
 
 
+class GroupTaskStatuses(models.TextChoices):
+    NOT_DONE = 'Not done'
+    IN_PROCESS = 'In process'
+    DONE = 'Done'
+    OUT_OF_DATE = 'Out of date'
+
+
 class TodoCategories(models.TextChoices):
     HOMEWORK = 'Домашнее задание'
     HOUSEWORK = 'Дела по дому'
@@ -38,19 +45,13 @@ class Comments(models.Model):
 
 
 class GroupTask(models.Model):
-    STATUS_CHOICES = (
-        ('not_done', 'Not done'),
-        ('in_process', 'In process'),
-        ('done', 'Done'),
-        ('out_of_date', 'Out of date')
-    )
     creator = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='creator')
     worker = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='worker', null=True, blank=True)
     task_title = models.CharField(max_length=100)
     task_description = models.TextField()
     task_start_time = models.DateTimeField(auto_now_add=True)
     deadline = models.DateTimeField(blank=True, null=True)
-    status = models.CharField(max_length=100, choices=STATUS_CHOICES, default='Not done')
+    status = models.CharField(max_length=100, choices=GroupTaskStatuses.choices, default=GroupTaskStatuses.NOT_DONE)
 
 
 class Groups(models.Model):
@@ -58,4 +59,3 @@ class Groups(models.Model):
     admin = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='admin')
     group_tasks = models.ManyToManyField(GroupTask, related_name='group_tasks', null=True, blank=True)
     users = models.ManyToManyField(Profile, related_name='users', null=True, blank=True)
-    task_amount = models.PositiveIntegerField(default=0)

@@ -1,7 +1,9 @@
 import ipdb
 import datetime
 import pytz
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponse
+from rest_framework.response import Response
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.db.models import Q
@@ -16,7 +18,7 @@ from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
             )
-from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOr403
+from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOr403, IsGroupAdmin
 
 
 class PermissionMixin:
@@ -82,20 +84,24 @@ class GroupListDetailView(generics.ListAPIView):
     permission_classes = [UserInGroupOr403]
 
     def get_queryset(self):
-        queryset = Groups.objects.filter(admin=self.request.user) or Groups.objects.filter(users=self.request.user)
-        # queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user))
+        try:
+            queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user)).distinct()
+        except TypeError:
+            return None
+
         return queryset
 
 
-class GroupsDetailView(generics.RetrieveUpdateAPIView):
+class GroupsDetailView(generics.RetrieveAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
     permission_classes = [UserInGroupOr403]
+    queryset = Groups.objects.all()
 
-    def get_queryset(self):
-        """Add members to the group"""
-        # ipdb.set_trace()
-        queryset = Groups.objects.all()
+
+class AddUsertoGoupView(APIView):
+    """Add members to the group"""
+    def get(self, request, pk):
         try:
             username_param = self.request.query_params['username']
         except MultiValueDictKeyError:
@@ -103,15 +109,16 @@ class GroupsDetailView(generics.RetrieveUpdateAPIView):
 
         if username_param:
             user = Profile.objects.filter(username=username_param).first()
-            group = queryset.filter(id=self.kwargs['pk']).first()
+            group = Groups.objects.filter(id=self.kwargs['pk']).first()
             group.users.add(user)
-        else:
-            queryset = Groups.objects.all()
-        return queryset
+            return Response(f'User {user.username} was invited')
+        return HttpResponse('')
 
 
 class GroupsDeleteUsersView(APIView):
     """Remove user from the group"""
+    permission_classes = (IsGroupAdmin, )
+
     def get(self, request, user_id, group_id):
         admin = self.request.user
         group = Groups.objects.filter(id=group_id).first()
@@ -119,9 +126,10 @@ class GroupsDeleteUsersView(APIView):
         if admin == group.admin:
             group.users.remove(user)
             group.save()
-            return HttpResponse('')
-        else:
-            raise PermissionDenied
+            return Response(f'User {user.username} was removed')
+        return Response(f'if ne otrabotal')
+        # else:
+        #     raise PermissionDenied
 
 
 class GroupTaskCreateView(generics.CreateAPIView):
