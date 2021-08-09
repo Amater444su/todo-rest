@@ -1,5 +1,5 @@
 import ipdb
-import datetime
+from datetime import datetime, timedelta
 import pytz
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponse
@@ -11,14 +11,15 @@ from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from todo.models import (
-    Todo, Comments, Groups, GroupTask, Profile
-        )
+    Todo, Comments, Groups, GroupTask, Profile,
+    GroupTaskStatuses
+)
 from rest_framework import viewsets, permissions
 from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
-            )
-from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroup, IsGroupAdmin
+)
+from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOrAdmin, IsGroupAdmin
 
 
 class TodoView(generics.ListAPIView):
@@ -72,6 +73,7 @@ class GroupsView(generics.ListAPIView):
 class GroupListDetailView(generics.ListAPIView):
     """List of all groups available for user"""
     serializer_class = GroupsSerializer
+
     # permission_classes = [UserInGroup]
 
     def get_queryset(self):
@@ -86,12 +88,13 @@ class GroupListDetailView(generics.ListAPIView):
 class GroupsDetailView(generics.RetrieveAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
-    permission_classes = [UserInGroup]
+    permission_classes = [UserInGroupOrAdmin]
     queryset = Groups.objects.all()
 
 
 class AddUserToGroupView(APIView):
     """Add members to the group"""
+
     def get(self, request, pk):
         try:
             username_param = self.request.query_params['username']
@@ -108,7 +111,7 @@ class AddUserToGroupView(APIView):
 
 class GroupsDeleteUsersView(APIView):
     """Remove user from the group"""
-    permission_classes = (IsGroupAdmin, )
+    permission_classes = (IsGroupAdmin,)
 
     def get(self, request, user_id, group_id):
         admin = self.request.user
@@ -125,7 +128,7 @@ class GroupTaskCreateView(generics.CreateAPIView):
     """Create task for current group"""
     queryset = GroupTask
     serializer_class = GroupTaskSerializer
-    permission_classes = [UserInGroup]
+    permission_classes = [UserInGroupOrAdmin]
 
     def perform_create(self, serializer, **kwargs):
         """Create task and relate this task to group"""
@@ -139,7 +142,7 @@ class GroupTaskCreateView(generics.CreateAPIView):
 
 class GroupTaskListView(generics.ListAPIView):
     """display a List of all tasks in current group"""
-    permission_classes = [UserInGroup]
+    permission_classes = [UserInGroupOrAdmin]
     serializer_class = GroupTaskSerializer
 
     def get_queryset(self):
@@ -148,27 +151,19 @@ class GroupTaskListView(generics.ListAPIView):
         return queryset
 
 
-# TODO: change naming;
-class GroupTaskSetWorkerView(generics.RetrieveAPIView):
+class AssignWorkerApiView(APIView):
     """Makes user the worker of the task"""
-    serializer_class = GroupTaskSerializer
-    queryset = GroupTask.objects.all()
-    # TODO: remove the logic of asign worker to separate method retrieve
-    def get_object(self):
-        user = self.request.user
-        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        task = group.group_tasks.filter(id=self.kwargs['pk']).first()
-        if user not in group.users.all() and user != group.admin:
-            raise PermissionDenied
-        elif user == task.worker:
-            return task
-        time_now = datetime.datetime.now()
+    permission_classes = [UserInGroupOrAdmin]
+
+    def get(self, request, pk, group_id):
+        current_user = self.request.user
+        group = Groups.objects.filter(id=group_id).first()
+        task = group.group_tasks.filter(id=pk).first()
         # TODO: get deadline from the request
-        time_end = time_now + datetime.timedelta(days=3)
-        # TODO: change in process into variable
-        task.worker, task.status, task.deadline = user, 'In process', time_end
+        deadline = datetime.now() + timedelta(days=3)
+        task.worker, task.status, task.deadline = current_user, GroupTaskStatuses.IN_PROCESS, deadline
         task.save()
-        return task
+        return Response(f'You now the worker of ({task.task_title})')
 
 
 class GroupTaskEndView(generics.RetrieveAPIView):
@@ -195,7 +190,6 @@ class GroupTaskEndView(generics.RetrieveAPIView):
 
 
 def send_mail_to_worker(request):
-
     send_mail(
         'Task remain',
         '1 day left before closing your task' + task.task_title,
