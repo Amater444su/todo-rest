@@ -43,3 +43,16 @@ class UserInGroupOrAdmin(BasePermission):
             return True
 
         return False
+
+
+class UserWorkerInGroup(BasePermission):
+    """Check users permission for write and read in groups"""
+
+    def has_permission(self, request, view):
+        current_user = request.user
+        group = Groups.objects.filter(pk=view.kwargs['group_id']).first()
+        task = group.group_tasks.filter(id=view.kwargs['pk']).first()
+        if current_user == task.worker:
+            return True
+
+        return False

@@ -19,7 +19,7 @@ from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
 )
-from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOrAdmin, IsGroupAdmin
+from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOrAdmin, IsGroupAdmin, UserWorkerInGroup
 
 
 class TodoView(generics.ListAPIView):
@@ -152,7 +152,7 @@ class GroupTaskListView(generics.ListAPIView):
 
 
 class AssignWorkerApiView(APIView):
-    """Makes user the worker of the task"""
+    """Assign user as the worker of the task"""
     permission_classes = [UserInGroupOrAdmin]
 
     def get(self, request, pk, group_id):
@@ -166,27 +166,46 @@ class AssignWorkerApiView(APIView):
         return Response(f'You now the worker of ({task.task_title})')
 
 
-class GroupTaskEndView(generics.RetrieveAPIView):
-    """User's ability to complete a task"""
-    queryset = Groups
-    serializer_class = GroupTaskSerializer
+# class GroupTaskEndView(generics.RetrieveAPIView):
+#     """User's ability to complete a task"""
+#     queryset = Groups
+#     serializer_class = GroupTaskSerializer
+#     permission_classes = [UserInGroupOrAdmin, UserWorkerInGroup]
+#
+#     def get_object(self):
+#         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+#         task = group.group_tasks.filter(id=self.kwargs['pk']).first()
+#         time_now = datetime.now()
+#         # TODO: change the replace find another way to compare
+#         start_task_time = time_now.replace(tzinfo=pytz.utc)
+#         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
+#         ipdb.set_trace()
+#         if start_task_time <= end_task_time:
+#             task.status = GroupTaskStatuses.DONE
+#         else:
+#             task.status = GroupTaskStatuses.OUT_OF_DATE
+#         task.save()
+#         return Response('')
 
-    def get_object(self):
-        user = self.request.user
-        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        task = group.group_tasks.filter(id=self.kwargs['pk']).first()
-        if user not in group.users.all() and user != group.admin:
-            raise PermissionDenied
-        time_now = datetime.datetime.now()
+
+class GroupTaskEndView(APIView):
+    """User's ability to complete a task"""
+    permission_classes = [UserInGroupOrAdmin, UserWorkerInGroup]
+
+    def get(self, request, group_id, pk):
+        group = Groups.objects.filter(id=group_id).first()
+        task = group.group_tasks.filter(id=pk).first()
+        time_now = datetime.now()
         # TODO: change the replace find another way to compare
         start_task_time = time_now.replace(tzinfo=pytz.utc)
         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
+        # ipdb.set_trace()
         if start_task_time <= end_task_time:
-            task.status = 'Done'
+            task.status = GroupTaskStatuses.DONE
         else:
-            task.status = 'Out of date'
+            task.status = GroupTaskStatuses.OUT_OF_DATE
         task.save()
-        return task
+        return Response(f'Task successfully summited as {task.status}')
 
 
 def send_mail_to_worker(request):
