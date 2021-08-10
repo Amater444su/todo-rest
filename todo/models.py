@@ -52,7 +52,6 @@ class GroupTask(models.Model):
     task_start_time = models.DateTimeField(auto_now_add=True)
     deadline = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=100, choices=GroupTaskStatuses.choices, default=GroupTaskStatuses.NOT_DONE)
-    id_group = models.PositiveIntegerField(default=0)
 
 
 class Groups(models.Model):

@@ -41,8 +41,10 @@ class GroupTaskSerializer(serializers.ModelSerializer):     #TODO
 
     def create(self, validated_data, **kwargs):
         instance = GroupTask.objects.create(**validated_data)
-        group = Groups.objects.filter(id=validated_data['id_group']).first()
+        group_id = self.context['view'].kwargs.get('group_id')
+        group = Groups.objects.filter(id=group_id).first()
         group.group_tasks.add(instance)
+        ipdb.set_trace()
         return instance
 
     class Meta:

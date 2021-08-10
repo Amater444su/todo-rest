@@ -132,13 +132,7 @@ class GroupTaskCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer, **kwargs):
         """Create task and relate this task to group"""
-        return serializer.save(creator=self.request.user, id_group=self.kwargs['group_id'])
-        # user = self.request.user
-        # serializer.save(creator=user)
-        # group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        # task = GroupTask.objects.filter(creator=self.request.user).last()
-        # group.group_tasks.add(task)
-        # return Response("Task successfully added")
+        return serializer.save(creator=self.request.user)
 
 
 class GroupTaskListView(generics.ListAPIView):
@@ -165,28 +159,6 @@ class AssignWorkerApiView(APIView):
         task.worker, task.status, task.deadline = current_user, GroupTaskStatuses.IN_PROCESS, deadline
         task.save()
         return Response(f'You now the worker of ({task.task_title})')
-
-
-# class GroupTaskEndView(generics.RetrieveAPIView):
-#     """User's ability to complete a task"""
-#     queryset = Groups
-#     serializer_class = GroupTaskSerializer
-#     permission_classes = [UserInGroupOrAdmin, UserWorkerInGroup]
-#
-#     def get_object(self):
-#         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-#         task = group.group_tasks.filter(id=self.kwargs['pk']).first()
-#         time_now = datetime.now()
-#         # TODO: change the replace find another way to compare
-#         start_task_time = time_now.replace(tzinfo=pytz.utc)
-#         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
-#         ipdb.set_trace()
-#         if start_task_time <= end_task_time:
-#             task.status = GroupTaskStatuses.DONE
-#         else:
-#             task.status = GroupTaskStatuses.OUT_OF_DATE
-#         task.save()
-#         return Response('')
 
 
 class GroupTaskEndView(APIView):
