@@ -132,12 +132,13 @@ class GroupTaskCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer, **kwargs):
         """Create task and relate this task to group"""
-        user = self.request.user
-        serializer.save(creator=user)
-        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        task = GroupTask.objects.filter(creator=self.request.user).last()
-        group.group_tasks.add(task)
-        return Response("Task successfully added")
+        return serializer.save(creator=self.request.user, id_group=self.kwargs['group_id'])
+        # user = self.request.user
+        # serializer.save(creator=user)
+        # group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        # task = GroupTask.objects.filter(creator=self.request.user).last()
+        # group.group_tasks.add(task)
+        # return Response("Task successfully added")
 
 
 class GroupTaskListView(generics.ListAPIView):
