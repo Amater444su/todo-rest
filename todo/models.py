@@ -1,6 +1,11 @@
+import ipdb
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import RegexValidator
+from django.core.cache import cache
+import datetime
+from todoapp import settings
+from django.contrib.auth.signals import user_logged_in
 
 
 class GroupTaskStatuses(models.TextChoices):
@@ -22,6 +27,7 @@ class Profile(AbstractUser):
             regex=r'^\+?1?\d{9,16}$',
             message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
     ])
+    login_count = models.PositiveIntegerField(default=0)
 
 
 class Todo(models.Model):

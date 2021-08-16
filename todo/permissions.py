@@ -34,11 +34,7 @@ class UserInGroupOrAdmin(BasePermission):
     """Check users permission for write and read in groups"""
     def has_permission(self, request, view):
         current_user = request.user
-        try:
-            group = Groups.objects.filter(pk=view.kwargs['group_id']).first()
-        except KeyError:
-            group = Groups.objects.filter(pk=view.kwargs['pk']).first()
-
+        group = Groups.objects.filter(pk=view.kwargs['group_id']).first()
         if current_user in group.users.all() or current_user == group.admin:
             return True
 
