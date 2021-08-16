@@ -34,7 +34,7 @@ class TodoDetailSerializer(serializers.ModelSerializer):
         fields = ['title', 'description', 'categories']
 
 
-class GroupTaskSerializer(serializers.ModelSerializer):     #TODO
+class GroupTaskSerializer(serializers.ModelSerializer):
     creator = serializers.SlugRelatedField(slug_field='username', read_only=True)
     worker = serializers.SlugRelatedField(slug_field='username', read_only=True)
     # deadline = serializers.DateTimeField(format="%d-%m-%Y")
@@ -44,7 +44,6 @@ class GroupTaskSerializer(serializers.ModelSerializer):     #TODO
         group_id = self.context['view'].kwargs.get('group_id')
         group = Groups.objects.filter(id=group_id).first()
         group.group_tasks.add(instance)
-        ipdb.set_trace()
         return instance
 
     class Meta:
@@ -57,6 +56,7 @@ class GroupsSerializer(serializers.ModelSerializer):
     admin = serializers.SlugRelatedField(slug_field='username', read_only=True)
     group_tasks = GroupTaskSerializer(read_only=True, many=True)
     users = serializers.SlugRelatedField(slug_field='username', read_only=True, many=True)
+    lookup_field = 'group_id'
 
     class Meta:
         model = Groups

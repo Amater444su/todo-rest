@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import pytz
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponse
+from rest_framework.exceptions import APIException
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
@@ -73,29 +75,29 @@ class GroupsView(generics.ListAPIView):
 class GroupListDetailView(generics.ListAPIView):
     """List of all groups available for user"""
     serializer_class = GroupsSerializer
-
-    # permission_classes = [UserInGroup]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        try:
-            queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user)).distinct()
-        except TypeError:
-            return None
-
+        # try:
+        queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user)).distinct()
+        # except TypeError:
+        #     return None
         return queryset
 
 
 class GroupsDetailView(generics.RetrieveAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
+    lookup_url_kwarg = 'group_id'
     permission_classes = [UserInGroupOrAdmin]
-    queryset = Groups.objects.all()
+    queryset = Groups
 
 
 class AddUserToGroupView(APIView):
     """Add members to the group"""
 
-    def get(self, request, pk):
+    def get(self, request, group_id):
+        group_id = self.kwargs['group_id']
         try:
             username_param = self.request.query_params['username']
         except MultiValueDictKeyError:
@@ -103,10 +105,13 @@ class AddUserToGroupView(APIView):
 
         if username_param:
             user = Profile.objects.filter(username=username_param).first()
-            group = Groups.objects.filter(id=self.kwargs['pk']).first()
+            if not user:
+                raise APIException(f'There is no user with such username <{username_param}>')
+            group = Groups.objects.filter(id=group_id).first()
             group.users.add(user)
-            return Response(f'User {user.username} was invited')
-        return HttpResponse('')
+            return Response(f'User <{user.username}> was invited')
+
+        return Response()
 
 
 class GroupsDeleteUsersView(APIView):
@@ -121,7 +126,7 @@ class GroupsDeleteUsersView(APIView):
             group.users.remove(user)
             group.save()
             return Response(f'User {user.username} was removed')
-        return Response(f'if ne otrabotal')
+        return Response()
 
 
 class GroupTaskCreateView(generics.CreateAPIView):
@@ -141,7 +146,8 @@ class GroupTaskListView(generics.ListAPIView):
     serializer_class = GroupTaskSerializer
 
     def get_queryset(self):
-        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        group_id = self.kwargs['group_id']
+        group = Groups.objects.filter(id=group_id).first()
         queryset = group.group_tasks.all().order_by('-worker')
         return queryset
 
@@ -156,7 +162,9 @@ class AssignWorkerApiView(APIView):
         task = group.group_tasks.filter(id=pk).first()
         # TODO: get deadline from the request
         deadline = datetime.now() + timedelta(days=3)
-        task.worker, task.status, task.deadline = current_user, GroupTaskStatuses.IN_PROCESS, deadline
+        task.worker = current_user
+        task.status = GroupTaskStatuses.IN_PROCESS
+        task.deadline = deadline
         task.save()
         return Response(f'You now the worker of ({task.task_title})')
 
@@ -174,7 +182,7 @@ class GroupTaskEndView(APIView):
         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
         # ipdb.set_trace()
         if start_task_time <= end_task_time:
-            task.status = GroupTaskStatuses.DONE
+            task.status = GroupTaskStatuses.DONEUserInGroupOrAdmin
         else:
             task.status = GroupTaskStatuses.OUT_OF_DATE
         task.save()
