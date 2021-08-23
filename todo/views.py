@@ -1,13 +1,10 @@
 import ipdb
 from datetime import datetime, timedelta
 import pytz
-from django.contrib.auth.models import AnonymousUser
-from django.http import HttpResponse
 from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.core.exceptions import PermissionDenied
-from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import generics, status
@@ -16,7 +13,6 @@ from todo.models import (
     Todo, Comments, Groups, GroupTask, Profile,
     GroupTaskStatuses
 )
-from rest_framework import viewsets, permissions
 from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
@@ -36,7 +32,6 @@ class TodoCreate(generics.CreateAPIView):
     serializer_class = TodoCreateSerializer
 
     def perform_create(self, serializer):
-        #   perform_create(self, serializer)- Вызывается CreateModelMixin при сохранении нового экземпляра объекта.
         serializer.save(author=self.request.user)
 
 
@@ -53,7 +48,6 @@ class CommentCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
 
     def perform_create(self, serializer, **kwargs):
-        #   perform_create(self, serializer)- Вызывается CreateModelMixin при сохранении нового экземпляра объекта.
         serializer.save(author=self.request.user, todo_id=self.kwargs.get('todo_id'))
 
 
@@ -78,10 +72,7 @@ class GroupListDetailView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # try:
         queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user)).distinct()
-        # except TypeError:
-        #     return None
         return queryset
 
 
@@ -180,24 +171,12 @@ class GroupTaskEndView(APIView):
         # TODO: change the replace find another way to compare
         start_task_time = time_now.replace(tzinfo=pytz.utc)
         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
-        # ipdb.set_trace()
         if start_task_time <= end_task_time:
             task.status = GroupTaskStatuses.DONEUserInGroupOrAdmin
         else:
             task.status = GroupTaskStatuses.OUT_OF_DATE
         task.save()
         return Response(f'Task successfully summited as {task.status}')
-
-
-def send_mail_to_worker(request):
-    send_mail(
-        'Task remain',
-        '1 day left before closing your task' + task.task_title,
-        'l792899@gmail.com',
-        [str(user.email)],
-        fail_silently=True
-    )
-    return 'qwe'
 
 
 """ Concrete View Classes

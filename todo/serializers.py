@@ -2,8 +2,6 @@ import ipdb
 from rest_framework import serializers
 from .models import Todo, Comments, GroupTask, Groups
 
-# Сериалайзер что бы представлять модель в JSON формате, и для валидации данных.
-
 
 class CommentSerializer(serializers.ModelSerializer):
 

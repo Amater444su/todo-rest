@@ -46,7 +46,7 @@ class UserInGroupOrAdmin(BasePermission):
 
 
 class UserWorkerInGroup(BasePermission):
-    """Check users permission for write and read in groups"""
+    """Check users permission for end the task"""
 
     def has_permission(self, request, view):
         current_user = request.user
