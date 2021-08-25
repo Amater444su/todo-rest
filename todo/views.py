@@ -21,7 +21,7 @@ from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOrAd
 
 
 class TodoView(generics.ListAPIView):
-    """List View for Todos model"""
+    """Display all todos"""
     queryset = Todo.objects.all()
     serializer_class = TodoSerializer
 
