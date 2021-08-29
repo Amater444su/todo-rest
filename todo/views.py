@@ -1,11 +1,10 @@
 import ipdb
 from datetime import datetime, timedelta
 import pytz
-from django.contrib.auth.models import AnonymousUser
-from django.http import HttpResponse
+from rest_framework.exceptions import APIException
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.core.exceptions import PermissionDenied
-from django.core.mail import send_mail
 from django.db.models import Q
 from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import generics, status
@@ -14,16 +13,15 @@ from todo.models import (
     Todo, Comments, Groups, GroupTask, Profile,
     GroupTaskStatuses
 )
-from rest_framework import viewsets, permissions
 from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
 )
-from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOrAdmin, IsGroupAdmin, UserWorkerInGroup
+from todo.permissions import IsObjectAuthor, UserInGroupOrAdmin, IsGroupAdmin, UserWorkerInGroup
 
 
 class TodoView(generics.ListAPIView):
-    """List View for Todos model"""
+    """Display all todos"""
     queryset = Todo.objects.all()
     serializer_class = TodoSerializer
 
@@ -34,14 +32,13 @@ class TodoCreate(generics.CreateAPIView):
     serializer_class = TodoCreateSerializer
 
     def perform_create(self, serializer):
-        #   perform_create(self, serializer)- Вызывается CreateModelMixin при сохранении нового экземпляра объекта.
         serializer.save(author=self.request.user)
 
 
 class TodoDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Read-Write-Delete Todos Detail """
     queryset = Todo.objects.all()
-    permission_class = [IsObjectAuthorOrReadOnlyPermission]
+    permission_classes = (IsObjectAuthor, )
     serializer_class = TodoDetailSerializer
 
 
@@ -51,7 +48,6 @@ class CommentCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
 
     def perform_create(self, serializer, **kwargs):
-        #   perform_create(self, serializer)- Вызывается CreateModelMixin при сохранении нового экземпляра объекта.
         serializer.save(author=self.request.user, todo_id=self.kwargs.get('todo_id'))
 
 
@@ -73,29 +69,26 @@ class GroupsView(generics.ListAPIView):
 class GroupListDetailView(generics.ListAPIView):
     """List of all groups available for user"""
     serializer_class = GroupsSerializer
-
-    # permission_classes = [UserInGroup]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        try:
-            queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user)).distinct()
-        except TypeError:
-            return None
-
+        queryset = Groups.objects.filter(Q(admin=self.request.user) | Q(users=self.request.user)).distinct()
         return queryset
 
 
 class GroupsDetailView(generics.RetrieveAPIView):
     """Detail group for admin and members"""
     serializer_class = GroupsSerializer
+    lookup_url_kwarg = 'group_id'
     permission_classes = [UserInGroupOrAdmin]
-    queryset = Groups.objects.all()
+    queryset = Groups
 
 
 class AddUserToGroupView(APIView):
     """Add members to the group"""
 
-    def get(self, request, pk):
+    def get(self, request, group_id):
+        group_id = self.kwargs['group_id']
         try:
             username_param = self.request.query_params['username']
         except MultiValueDictKeyError:
@@ -103,10 +96,13 @@ class AddUserToGroupView(APIView):
 
         if username_param:
             user = Profile.objects.filter(username=username_param).first()
-            group = Groups.objects.filter(id=self.kwargs['pk']).first()
+            if not user:
+                raise APIException(f'There is no user with such username <{username_param}>')
+            group = Groups.objects.filter(id=group_id).first()
             group.users.add(user)
-            return Response(f'User {user.username} was invited')
-        return HttpResponse('')
+            return Response(f'User <{user.username}> was invited')
+
+        return Response()
 
 
 class GroupsDeleteUsersView(APIView):
@@ -121,7 +117,7 @@ class GroupsDeleteUsersView(APIView):
             group.users.remove(user)
             group.save()
             return Response(f'User {user.username} was removed')
-        return Response(f'if ne otrabotal')
+        return Response()
 
 
 class GroupTaskCreateView(generics.CreateAPIView):
@@ -132,12 +128,7 @@ class GroupTaskCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer, **kwargs):
         """Create task and relate this task to group"""
-        user = self.request.user
-        serializer.save(creator=user)
-        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-        task = GroupTask.objects.filter(creator=self.request.user).last()
-        group.group_tasks.add(task)
-        return Response("Task successfully added")
+        return serializer.save(creator=self.request.user)
 
 
 class GroupTaskListView(generics.ListAPIView):
@@ -146,7 +137,8 @@ class GroupTaskListView(generics.ListAPIView):
     serializer_class = GroupTaskSerializer
 
     def get_queryset(self):
-        group = Groups.objects.filter(id=self.kwargs['group_id']).first()
+        group_id = self.kwargs['group_id']
+        group = Groups.objects.filter(id=group_id).first()
         queryset = group.group_tasks.all().order_by('-worker')
         return queryset
 
@@ -161,31 +153,11 @@ class AssignWorkerApiView(APIView):
         task = group.group_tasks.filter(id=pk).first()
         # TODO: get deadline from the request
         deadline = datetime.now() + timedelta(days=3)
-        task.worker, task.status, task.deadline = current_user, GroupTaskStatuses.IN_PROCESS, deadline
+        task.worker = current_user
+        task.status = GroupTaskStatuses.IN_PROCESS
+        task.deadline = deadline
         task.save()
         return Response(f'You now the worker of ({task.task_title})')
-
-
-# class GroupTaskEndView(generics.RetrieveAPIView):
-#     """User's ability to complete a task"""
-#     queryset = Groups
-#     serializer_class = GroupTaskSerializer
-#     permission_classes = [UserInGroupOrAdmin, UserWorkerInGroup]
-#
-#     def get_object(self):
-#         group = Groups.objects.filter(id=self.kwargs['group_id']).first()
-#         task = group.group_tasks.filter(id=self.kwargs['pk']).first()
-#         time_now = datetime.now()
-#         # TODO: change the replace find another way to compare
-#         start_task_time = time_now.replace(tzinfo=pytz.utc)
-#         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
-#         ipdb.set_trace()
-#         if start_task_time <= end_task_time:
-#             task.status = GroupTaskStatuses.DONE
-#         else:
-#             task.status = GroupTaskStatuses.OUT_OF_DATE
-#         task.save()
-#         return Response('')
 
 
 class GroupTaskEndView(APIView):
@@ -199,24 +171,12 @@ class GroupTaskEndView(APIView):
         # TODO: change the replace find another way to compare
         start_task_time = time_now.replace(tzinfo=pytz.utc)
         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
-        # ipdb.set_trace()
         if start_task_time <= end_task_time:
-            task.status = GroupTaskStatuses.DONE
+            task.status = GroupTaskStatuses.DONEUserInGroupOrAdmin
         else:
             task.status = GroupTaskStatuses.OUT_OF_DATE
         task.save()
         return Response(f'Task successfully summited as {task.status}')
-
-
-def send_mail_to_worker(request):
-    send_mail(
-        'Task remain',
-        '1 day left before closing your task' + task.task_title,
-        'l792899@gmail.com',
-        [str(user.email)],
-        fail_silently=True
-    )
-    return 'qwe'
 
 
 """ Concrete View Classes

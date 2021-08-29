@@ -20,6 +20,8 @@ class GroupTaskAdmin(admin.TabularInline):
 
 
 class GroupsAdmin(admin.ModelAdmin):
+    list_display = ('name', 'admin')
+    list_display_links = ('admin', )
     inlines = (GroupTaskAdmin,)
 
 
