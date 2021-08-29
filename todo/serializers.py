@@ -12,6 +12,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class TodoSerializer(serializers.ModelSerializer):
     todo_comment = CommentSerializer(many=True, read_only=True)
+    author = serializers.SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         model = Todo

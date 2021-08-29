@@ -17,7 +17,7 @@ from todo.serializers import (
     TodoSerializer, TodoDetailSerializer, TodoCreateSerializer, CommentSerializer,
     GroupsSerializer, GroupTaskSerializer
 )
-from todo.permissions import IsObjectAuthorOrReadOnlyPermission, UserInGroupOrAdmin, IsGroupAdmin, UserWorkerInGroup
+from todo.permissions import IsObjectAuthor, UserInGroupOrAdmin, IsGroupAdmin, UserWorkerInGroup
 
 
 class TodoView(generics.ListAPIView):
@@ -38,7 +38,7 @@ class TodoCreate(generics.CreateAPIView):
 class TodoDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Read-Write-Delete Todos Detail """
     queryset = Todo.objects.all()
-    permission_class = [IsObjectAuthorOrReadOnlyPermission]
+    permission_classes = (IsObjectAuthor, )
     serializer_class = TodoDetailSerializer
 
 

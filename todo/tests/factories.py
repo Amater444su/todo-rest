@@ -11,11 +11,10 @@ class UserFactory(DjangoModelFactory):
     class Meta:
         model = User
 
-    username = 'Axe'
-    email = 'qwe@test.com'
-    id = 1
-    # username = factory.Sequence(lambda n: f"User{n}")
-    # email = factory.Sequence(lambda n: f"user{n}p@test.com")
+    # username = 'Axe'
+    # email = 'qwe@test.com'
+    username = factory.Sequence(lambda n: f"User{n}")
+    email = factory.Sequence(lambda n: f"user{n}p@test.com")
 
 
 class TodoFactory(DjangoModelFactory):
