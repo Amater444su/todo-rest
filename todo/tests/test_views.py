@@ -2,14 +2,11 @@ import ipdb
 from django.urls import reverse
 import pytest
 from django.contrib.auth.models import AnonymousUser
-from mixer.backend.django import mixer
 from django.test import RequestFactory
 from rest_framework.test import APIClient
 from django.db import transaction
 
-from todo.models import Profile, Todo, Comments
-from todo.tests.factories import TodoFactory
-from todo.views import TodoDetailView
+from todo.models import Profile, Todo, Comments, Groups
 
 
 @pytest.mark.django_db
@@ -48,7 +45,6 @@ class TestTodoViews:
         todo.save()
         path = reverse('todo')
         response = api_client_authenticated.get(path)
-        # ipdb.set_trace()
         assert response.status_code == 200
         assert Todo.objects.count() == 1
         assert response.json() == [
@@ -74,7 +70,6 @@ class TestTodoViews:
 
         assert response.status_code == 201
         assert Comments.objects.count() == 1
-        # ipdb.set_trace()
         assert response.json() == {
 
                 'id': comment.id,
@@ -82,6 +77,102 @@ class TestTodoViews:
             }
 
 
-
+@pytest.mark.django_db
 class TestGroupView:
-    pass
+
+    def test_group_create(self, api_client_authenticated):
+        assert Groups.objects.count() == 0
+
+        path = reverse('group_create')
+        request_data = {
+            'name': 'test_group'
+        }
+        response = api_client_authenticated.post(path, request_data)
+        group = Groups.objects.get(id=1)
+
+        assert response.status_code == 201
+        assert Groups.objects.count() == 1
+        assert response.json() == {
+            'id': group.id,
+            'name': group.name,
+            'admin': group.admin.username,
+            'group_tasks': [],
+            'users': []
+
+        }
+
+    def test_list_display_all_groups(self, api_client_authenticated):
+        path = reverse('group')
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+
+    def test_detail_group(self, api_client_authenticated, groups, user):
+        groups.admin = user
+        groups.save()
+
+        path = reverse('group_detail', kwargs={'group_id': groups.id})
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+
+    def test_add_user_to_group(self, api_client_authenticated, groups, user):
+        groups.admin = user
+        groups.save()
+        path = reverse('group_detail', kwargs={'group_id': groups.id})
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+        assert response.json() == {
+            'id': groups.id,
+            'name': groups.name,
+            'admin': groups.admin.username,
+            'group_tasks': [],
+            'users': []
+        }
+
+        path = reverse('group_add_user', kwargs={'group_id': groups.id})
+        response = api_client_authenticated.get(path, {'username': str(user.username)})
+
+        assert response.status_code == 200
+        assert response.json() == f'User <{user.username}> was invited'
+
+    def test_list_groups_for_user(self, api_client_authenticated, groups, user):
+        groups.admin = user
+        groups.save()
+        path = reverse('users_group')
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+        assert Groups.objects.count() == 1
+        assert response.json() == [
+            {
+                'id': groups.id,
+                'name': groups.name,
+                'group_tasks': [],
+                'users': [],
+                'admin': groups.admin.username
+            }
+        ]
+
+    def test_group_remove_user(self, api_client_authenticated, groups, user):
+        groups.users.add(user)
+        path = reverse('group_detail', kwargs={'group_id': groups.id})
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+        assert response.json() == {
+            'id': groups.id,
+            'name': groups.name,
+            'admin': groups.admin.username,
+            'group_tasks': [],
+            'users': [str(user.username)]
+        }
+
+        groups.admin = user
+        groups.save()
+        path = reverse('group_remove_user', kwargs={'group_id': groups.id, 'user_id': str(user.id)})
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+        assert response.json() == f'User {user.username} was removed'

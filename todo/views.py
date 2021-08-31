@@ -172,7 +172,7 @@ class GroupTaskEndView(APIView):
         start_task_time = time_now.replace(tzinfo=pytz.utc)
         end_task_time = task.deadline.replace(tzinfo=pytz.utc)
         if start_task_time <= end_task_time:
-            task.status = GroupTaskStatuses.DONEUserInGroupOrAdmin
+            task.status = GroupTaskStatuses.DONE
         else:
             task.status = GroupTaskStatuses.OUT_OF_DATE
         task.save()

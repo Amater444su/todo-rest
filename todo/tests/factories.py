@@ -49,5 +49,5 @@ class GroupsFactory(DjangoModelFactory):
 
     name = 'test_name'
     admin = factory.SubFactory(UserFactory)
-    group_tasks = factory.SubFactory(UserFactory)
-    users = factory.SubFactory(UserFactory)
+    group_tasks = factory.RelatedFactoryList(GroupTaskFactory)
+    users = factory.RelatedFactoryList(UserFactory)
