@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import ipdb
 from django.urls import reverse
 import pytest
@@ -6,7 +8,7 @@ from django.test import RequestFactory
 from rest_framework.test import APIClient
 from django.db import transaction
 
-from todo.models import Profile, Todo, Comments, Groups
+from todo.models import Profile, Todo, Comments, Groups, GroupTask
 
 
 @pytest.mark.django_db
@@ -176,3 +178,79 @@ class TestGroupView:
 
         assert response.status_code == 200
         assert response.json() == f'User {user.username} was removed'
+
+    def test_create_task_group(self, api_client_authenticated, groups, user):
+
+        groups.admin = user
+        groups.save()
+        path = reverse('grouptask_create', kwargs={'group_id': groups.id})
+        request_data = {
+            'creator': user.id,
+            'task_title': 'test_task_title',
+            'task_description': 'test_task_description',
+
+
+        }
+        response = api_client_authenticated.post(path, request_data)
+        task = GroupTask.objects.last()
+
+        assert response.status_code == 201
+        assert response.json() == {
+            'id': task.id,
+            'task_title': task.task_title,
+            'task_description': task.task_description,
+            'creator': user.username,
+            'worker': None,
+            'status': 'Not done',
+            'deadline': None
+        }
+
+    def test_list_tasks_for_group(self, api_client_authenticated, groups, user, group_task):
+
+        path = reverse('tasks_list', kwargs={'group_id': groups.id})
+        groups.admin = user
+        groups.group_tasks.add(group_task)
+        groups.save()
+
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                'id': group_task.id,
+                'task_title': group_task.task_title,
+                'task_description': group_task.task_description,
+                'creator': group_task.creator.username,
+                'worker': None,
+                'status': 'Not done',
+                'deadline': None
+            }
+        ]
+
+    def test_set_group_task_worker(self, api_client_authenticated, groups, user, group_task):
+
+        assert group_task.worker is None
+
+        groups.users.add(user)
+        groups.group_tasks.add(group_task)
+        path = reverse('task_worker', kwargs={'group_id': groups.id, 'pk': group_task.id})
+        response = api_client_authenticated.get(path)
+
+        assert response.status_code == 200
+        assert response.json() == f'You now the worker of <{group_task.task_title}>'
+        assert groups.group_tasks.last().worker == user
+
+    def test_end_group_task(self, api_client_authenticated, groups, user, group_task):
+
+        deadline = datetime.now() + timedelta(days=3)
+        group_task.deadline = deadline
+        group_task.worker = user
+        groups.group_tasks.add(group_task)
+        groups.users.add(user)
+        group_task.save()
+        path = reverse('task_end', kwargs={'group_id': groups.id, 'pk': group_task.id})
+        response = api_client_authenticated.get(path)
+        task = groups.group_tasks.last()
+
+        assert response.status_code == 200
+        assert response.json() == f'Task successfully submitted as {task.status}'

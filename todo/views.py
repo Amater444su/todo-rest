@@ -157,7 +157,7 @@ class AssignWorkerApiView(APIView):
         task.status = GroupTaskStatuses.IN_PROCESS
         task.deadline = deadline
         task.save()
-        return Response(f'You now the worker of ({task.task_title})')
+        return Response(f'You now the worker of <{task.task_title}>')
 
 
 class GroupTaskEndView(APIView):
@@ -176,7 +176,7 @@ class GroupTaskEndView(APIView):
         else:
             task.status = GroupTaskStatuses.OUT_OF_DATE
         task.save()
-        return Response(f'Task successfully summited as {task.status}')
+        return Response(f'Task successfully submitted as {task.status}')
 
 
 """ Concrete View Classes

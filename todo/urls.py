@@ -21,7 +21,7 @@ urlpatterns = [
     path('group/<int:group_id>/remove/<int:user_id>/', GroupsDeleteUsersView.as_view(), name='group_remove_user'),
     path('group/<int:group_id>/task-create/', GroupTaskCreateView.as_view(), name='grouptask_create'),
     path('group/<int:group_id>/tasks/', GroupTaskListView.as_view(), name='tasks_list'),
-    path('group/<int:group_id>/tasks/<int:pk>/', AssignWorkerApiView.as_view(), name='tasks_list'),
+    path('group/<int:group_id>/tasks/<int:pk>/', AssignWorkerApiView.as_view(), name='task_worker'),
     path('group/<int:group_id>/tasks/<int:pk>/end/', GroupTaskEndView.as_view(), name='task_end'),
 
 
