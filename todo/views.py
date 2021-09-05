@@ -157,7 +157,7 @@ class AssignWorkerApiView(APIView):
         task.status = GroupTaskStatuses.IN_PROCESS
         task.deadline = deadline
         task.save()
-        return Response(f'You now the worker of <{task.task_title}>')
+        return Response(f'You are now the worker of <{task.task_title}>')
 
 
 class GroupTaskEndView(APIView):

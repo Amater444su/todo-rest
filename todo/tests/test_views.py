@@ -103,11 +103,12 @@ class TestGroupView:
 
         }
 
-    def test_list_display_all_groups(self, api_client_authenticated):
+    def test_list_display_all_groups(self, api_client_authenticated, groups, user):
         path = reverse('group')
         response = api_client_authenticated.get(path)
 
         assert response.status_code == 200
+        assert len(response.data) == 1
 
     def test_detail_group(self, api_client_authenticated, groups, user):
         groups.admin = user
@@ -117,6 +118,13 @@ class TestGroupView:
         response = api_client_authenticated.get(path)
 
         assert response.status_code == 200
+        assert response.json() == {
+            'id': groups.id,
+            'name': groups.name,
+            'admin': groups.admin.username,
+            'group_tasks': [],
+            'users': []
+        }
 
     def test_add_user_to_group(self, api_client_authenticated, groups, user):
         groups.admin = user
@@ -134,7 +142,7 @@ class TestGroupView:
         }
 
         path = reverse('group_add_user', kwargs={'group_id': groups.id})
-        response = api_client_authenticated.get(path, {'username': str(user.username)})
+        response = api_client_authenticated.get(path, {'username': user.username})
 
         assert response.status_code == 200
         assert response.json() == f'User <{user.username}> was invited'
@@ -158,18 +166,10 @@ class TestGroupView:
         ]
 
     def test_group_remove_user(self, api_client_authenticated, groups, user):
-        groups.users.add(user)
-        path = reverse('group_detail', kwargs={'group_id': groups.id})
-        response = api_client_authenticated.get(path)
 
-        assert response.status_code == 200
-        assert response.json() == {
-            'id': groups.id,
-            'name': groups.name,
-            'admin': groups.admin.username,
-            'group_tasks': [],
-            'users': [str(user.username)]
-        }
+        assert groups.users.count() == 0
+        groups.users.add(user)
+        assert groups.users.count() == 1
 
         groups.admin = user
         groups.save()
@@ -188,8 +188,6 @@ class TestGroupView:
             'creator': user.id,
             'task_title': 'test_task_title',
             'task_description': 'test_task_description',
-
-
         }
         response = api_client_authenticated.post(path, request_data)
         task = GroupTask.objects.last()
@@ -207,11 +205,10 @@ class TestGroupView:
 
     def test_list_tasks_for_group(self, api_client_authenticated, groups, user, group_task):
 
-        path = reverse('tasks_list', kwargs={'group_id': groups.id})
         groups.admin = user
         groups.group_tasks.add(group_task)
         groups.save()
-
+        path = reverse('tasks_list', kwargs={'group_id': groups.id})
         response = api_client_authenticated.get(path)
 
         assert response.status_code == 200
@@ -237,10 +234,10 @@ class TestGroupView:
         response = api_client_authenticated.get(path)
 
         assert response.status_code == 200
-        assert response.json() == f'You now the worker of <{group_task.task_title}>'
+        assert response.json() == f'You are now the worker of <{group_task.task_title}>'
         assert groups.group_tasks.last().worker == user
 
-    def test_end_group_task(self, api_client_authenticated, groups, user, group_task):
+    def test_group_task_end(self, api_client_authenticated, groups, user, group_task):
 
         deadline = datetime.now() + timedelta(days=3)
         group_task.deadline = deadline

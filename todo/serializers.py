@@ -36,7 +36,6 @@ class TodoDetailSerializer(serializers.ModelSerializer):
 class GroupTaskSerializer(serializers.ModelSerializer):
     creator = serializers.SlugRelatedField(slug_field='username', read_only=True)
     worker = serializers.SlugRelatedField(slug_field='username', read_only=True)
-    # deadline = serializers.DateTimeField(format="%d-%m-%Y")
 
     def create(self, validated_data, **kwargs):
         instance = GroupTask.objects.create(**validated_data)
