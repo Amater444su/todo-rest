@@ -4,6 +4,7 @@ import pytz
 from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_yasg.utils import swagger_auto_schema
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.utils.datastructures import MultiValueDictKeyError
@@ -66,6 +67,7 @@ class GroupsView(generics.ListAPIView):
     serializer_class = GroupsSerializer
 
 
+@swagger_auto_schema(query_serializer=GroupsSerializer)
 class GroupListDetailView(generics.ListAPIView):
     """List of all groups available for user"""
     serializer_class = GroupsSerializer

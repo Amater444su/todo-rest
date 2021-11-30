@@ -1,11 +1,6 @@
-import ipdb
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.core.validators import RegexValidator
-from django.core.cache import cache
-import datetime
-from todoapp import settings
-from django.contrib.auth.signals import user_logged_in
 
 
 class GroupTaskStatuses(models.TextChoices):
