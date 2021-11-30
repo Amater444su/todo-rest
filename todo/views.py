@@ -188,7 +188,7 @@ class GroupTaskEndView(APIView):
         Used for create-only endpoints.
 #ListAPIView
         Used for read-only endpoints to represent a collection of model instances.
-#RetrieveAPIView
+    #RetrieveAPIView
         Used for read-only endpoints to represent a single model instance.
 #DestroyAPIView
         Used for delete-only endpoints for a single model instance.
